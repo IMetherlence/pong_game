@@ -7,6 +7,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/pong_game/models"
 )
 
@@ -47,27 +48,40 @@ func NewGame() *Game {
 	}
 }
 
-func (g *Game) Update() {
+func (g *Game) handleExitPrompt() bool {
 	// ---- 1. Check ESC for exit prompt ----
-	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
+	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		g.ShowExitPrompt = true
 	}
 
 	// ---- 2. If exit prompt is active, only handle Yes/No keys ----
 	if g.ShowExitPrompt {
-		if ebiten.IsKeyPressed(ebiten.KeyY) {
+		if inpututil.IsKeyJustPressed(ebiten.KeyY) {
 			// Quit the game
 			// Ebiten does not have a direct quit call, so call runtime exit
 			os.Exit(0) // simple way to exit
 		}
-		if ebiten.IsKeyPressed(ebiten.KeyN) {
+		if inpututil.IsKeyJustPressed(ebiten.KeyN) {
 			// Cancel exit
 			g.ShowExitPrompt = false
 		}
 
 		// Skip game update while in prompt
+		return true
+	}
+	return false
+}
+
+func (g *Game) Update() {
+	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
+		g.ShowExitPrompt = true
+	}
+
+	if g.handleExitPrompt() {
+		// Skip game update while in prompt
 		return
 	}
+
 	// Paddle movement
 	if ebiten.IsKeyPressed(ebiten.KeyW) {
 		g.LeftPaddle.MoveUp()
@@ -118,20 +132,6 @@ func (g *Game) Update() {
 		g.Ball.Y = 300 - g.Ball.Size/2
 		g.Ball.DX = -4 // serve toward the player who lost
 	}
-
-	//	// This is no longer required due to the presence of the scoreboard
-	// if g.Ball.X < 0 || g.Ball.X > 800 { // assuming screen width = 800
-	// 	// reset ball to center
-	// 	g.Ball.X = 400 - g.Ball.Size/2
-	// 	g.Ball.Y = 300 - g.Ball.Size/2
-
-	// 	// optionally reverse X velocity so it goes toward the player who lost
-	// 	g.Ball.DX = -g.Ball.DX
-
-	// 	// optional: randomize Y velocity slightly to avoid straight lines
-	// 	// g.Ball.VY = rand.Float64()*4 - 2 // random -2..2
-	// }
-
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
